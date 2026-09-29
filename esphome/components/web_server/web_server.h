@@ -35,6 +35,13 @@ extern const uint8_t ESPHOME_WEBSERVER_JS_INCLUDE[] PROGMEM;
 extern const size_t ESPHOME_WEBSERVER_JS_INCLUDE_SIZE;
 #endif
 
+#ifdef USE_WEBSERVER_IMAGES
+struct ImageConfig {
+  std::string path;
+  std::string file;
+};
+#endif
+
 namespace esphome::web_server {
 
 // Parameter names live in flash on ESP8266
@@ -227,6 +234,15 @@ class WebServer final : public Component, public AsyncWebHandler {
   void set_js_include(const char *js_include) { this->js_include_ = js_include; }
 #endif
 
+#ifdef USE_WEBSERVER_IMAGES
+  /** Add an image to be served at the given path.
+   *
+   * @param path Path to serve the image from the web server.
+   * @param file Local file path to the image.
+   */
+  void add_image(const std::string &path, const std::string &file);
+#endif
+
   /** Determine whether internal components should be displayed on the web server.
    * Defaults to false.
    *
@@ -284,6 +300,10 @@ class WebServer final : public Component, public AsyncWebHandler {
 #ifdef USE_WEBSERVER_JS_INCLUDE
   /// Handle included js request under '/0.js'.
   void handle_js_request(AsyncWebServerRequest *request);
+#endif
+
+#ifdef USE_WEBSERVER_IMAGES
+  void handle_image_request(AsyncWebServerRequest *request, const std::string &file);
 #endif
 
 #ifdef USE_WEBSERVER_PRIVATE_NETWORK_ACCESS
@@ -609,6 +629,9 @@ class WebServer final : public Component, public AsyncWebHandler {
 #endif
 #ifdef USE_WEBSERVER_JS_INCLUDE
   const char *js_include_{nullptr};
+#endif
+#ifdef USE_WEBSERVER_IMAGES
+  std::vector<ImageConfig> images_;
 #endif
   bool expose_log_{true};
 #ifdef USE_WEBSERVER_ALLOWED_ORIGINS
