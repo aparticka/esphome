@@ -17,6 +17,7 @@ from esphome.const import (
     CONF_CSS_INCLUDE,
     CONF_CSS_URL,
     CONF_ENABLE_PRIVATE_NETWORK_ACCESS,
+    CONF_FILE,
     CONF_ID,
     CONF_INCLUDE_INTERNAL,
     CONF_JS_INCLUDE,
@@ -26,6 +27,7 @@ from esphome.const import (
     CONF_NAME,
     CONF_OTA,
     CONF_PASSWORD,
+    CONF_PATH,
     CONF_PORT,
     CONF_TYPE,
     CONF_USERNAME,
@@ -250,6 +252,13 @@ WEBSERVER_SORTING_SCHEMA = cv.Schema(
     }
 )
 
+IMAGE_SCHEMA = cv.Schema(
+    {
+        cv.Required(CONF_PATH): cv.string,
+        cv.Required(CONF_FILE): cv.file_,
+    }
+)
+
 
 CONFIG_SCHEMA = cv.All(
     cv.Schema(
@@ -261,6 +270,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_CSS_INCLUDE): cv.file_,
             cv.Optional(CONF_JS_URL): cv.string,
             cv.Optional(CONF_JS_INCLUDE): cv.file_,
+            cv.Optional("images"): cv.ensure_list(IMAGE_SCHEMA),
             cv.Optional(CONF_ENABLE_PRIVATE_NETWORK_ACCESS, default=False): cv.boolean,
             cv.Optional(CONF_ALLOWED_ORIGINS): cv.All(
                 cv.ensure_list(validate_origin), cv.Length(min=1)
@@ -441,6 +451,12 @@ async def to_code(config: ConfigType) -> None:
         path = CORE.relative_config_path(config[CONF_JS_INCLUDE])
         with path.open(encoding="utf-8") as js_file:
             add_resource_as_progmem("JS_INCLUDE", js_file.read())
+    if "images" in config:
+        cg.add_define("USE_WEBSERVER_IMAGES")
+        for image_config in config["images"]:
+            path = image_config[CONF_PATH]
+            file_path = image_config[CONF_FILE]
+            cg.add(var.add_image(path, file_path))
     # include_internal_ is false in C++; only emit the setter to turn it on.
     if config[CONF_INCLUDE_INTERNAL]:
         cg.add(var.set_include_internal(True))

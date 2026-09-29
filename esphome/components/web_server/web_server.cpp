@@ -381,6 +381,12 @@ void WebServer::setup() {
 #endif
   this->base_->add_handler(this);
 
+#ifdef USE_WEBSERVER_IMAGES
+  for (const auto &image : this->images_) {
+    this->register_image_handler_(image.path, image.file);
+  }
+#endif
+
   // OTA is now handled by the web_server OTA platform
 
   // doesn't need defer functionality - if the queue is full, the client JS knows it's alive because it's clearly
@@ -535,6 +541,33 @@ void WebServer::handle_js_request(AsyncWebServerRequest *request) {
 #endif
   response->addHeader(ESPHOME_F("Content-Encoding"), ESPHOME_F("gzip"));
   request->send(response);
+}
+#endif
+
+#ifdef USE_WEBSERVER_IMAGES
+void WebServer::handle_image_request(AsyncWebServerRequest *request, const std::string &file) {
+  std::ifstream file_stream(file, std::ios::binary);
+
+  if (!file_stream.is_open()) {
+    ESP_LOGW(TAG, "Failed to open image file: %s", file.c_str());
+    request->send(404, "text/plain", "File not found");
+    return;
+  }
+
+  const char *mime_type = "application/octet-stream";
+  if (file.find(".png") != std::string::npos) {
+    mime_type = "image/png";
+  }
+
+  std::stringstream buffer;
+  buffer << file_stream.rdbuf();
+  file_stream.close();
+
+  request->send(200, mime_type, buffer.str());
+}
+
+void WebServer::add_image(const std::string &path, const std::string &file) {
+  this->images_.push_back({path, file});
 }
 #endif
 
@@ -2512,6 +2545,15 @@ void WebServer::handleRequest(AsyncWebServerRequest *request) {
   if (url == ESPHOME_F("/0.js")) {
     this->handle_js_request(request);
     return;
+  }
+#endif
+
+#ifdef USE_WEBSERVER_IMAGES
+  for (const auto &image : this->images_) {
+    if (url == image.path) {
+      this->handle_image_request(request, image.file);
+      return;
+    }
   }
 #endif
 
