@@ -19,7 +19,6 @@ from esphome.const import (
     CONF_ENABLE_PRIVATE_NETWORK_ACCESS,
     CONF_FILE,
     CONF_ID,
-    CONF_IMAGES,
     CONF_INCLUDE_INTERNAL,
     CONF_JS_INCLUDE,
     CONF_JS_URL,
@@ -271,7 +270,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_CSS_INCLUDE): cv.file_,
             cv.Optional(CONF_JS_URL): cv.string,
             cv.Optional(CONF_JS_INCLUDE): cv.file_,
-            cv.Optional(CONF_IMAGES): cv.ensure_list(IMAGE_SCHEMA),
+            cv.Optional("images"): cv.ensure_list(IMAGE_SCHEMA),
             cv.Optional(CONF_ENABLE_PRIVATE_NETWORK_ACCESS, default=False): cv.boolean,
             cv.Optional(CONF_ALLOWED_ORIGINS): cv.All(
                 cv.ensure_list(validate_origin), cv.Length(min=1)
@@ -451,9 +450,9 @@ async def to_code(config: ConfigType) -> None:
         path = CORE.relative_config_path(config[CONF_JS_INCLUDE])
         with path.open(encoding="utf-8") as js_file:
             add_resource_as_progmem("JS_INCLUDE", js_file.read())
-    if CONF_IMAGES in config:
+    if "images" in config:
         cg.add_define("USE_WEBSERVER_IMAGES")
-        for image_config in config[CONF_IMAGES]:
+        for image_config in config["images"]:
             path = image_config[CONF_PATH]
             file_path = image_config[CONF_FILE]
             cg.add(var.add_image(path, file_path))
